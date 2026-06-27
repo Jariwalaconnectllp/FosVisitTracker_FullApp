@@ -362,7 +362,7 @@ const getDashboardStats = async (req, res) => {
       }));
 
       // Recent visits
-      const recentVisits = await prisma.visit.findMany({
+      const latestVisits = await prisma.visit.findMany({
         where: { visitorId: req.user.id },
         include: {
           dealer: { select: { id: true, name: true, shopName: true } },
@@ -391,7 +391,7 @@ const getDashboardStats = async (req, res) => {
         achievement: target?.targetCount ? Math.round((visitsThisMonth / target.targetCount) * 100) : 0,
         streak,
         topDealers: topDealersWithCount,
-        recentVisits,
+        recentVisits: latestVisits,
         plannedVisits,
       };
     } else if (req.user.role === 'BM') {
