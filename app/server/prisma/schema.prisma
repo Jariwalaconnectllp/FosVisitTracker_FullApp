@@ -55,6 +55,7 @@ model Dealer {
 model Visit {
   id           String      @id @default(uuid())
   visitorId    String      @map("visitor_id") @db.Uuid
+  bmId         String?     @map("bm_id") @db.Uuid
   visitorRole  VisitorRole @map("visitor_role")
   dealerId     String      @map("dealer_id") @db.Uuid
   visitDate    DateTime    @map("visit_date") @db.Date
@@ -72,9 +73,9 @@ model Visit {
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @default(now()) @map("updated_at")
 
-  visitor  User   @relation("VisitorVisits", fields: [visitorId], references: [id])
-  dealer   Dealer @relation(fields: [dealerId], references: [id])
-  bm       User?  @relation("BmVisits", fields: [visitorId], references: [id])
+  visitor  User    @relation("VisitorVisits", fields: [visitorId], references: [id])
+  dealer   Dealer  @relation(fields: [dealerId], references: [id])
+  bm       User?   @relation("BmVisits", fields: [bmId], references: [id])
 
   @@index([visitorId])
   @@index([dealerId])
