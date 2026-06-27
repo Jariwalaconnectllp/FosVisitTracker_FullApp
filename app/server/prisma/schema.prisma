@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  role      UserRole
+  bmId      String?  @map("bm_id") @db.Uuid
+  region    String?  @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  bm                User?               @relation("BmSalesmen", fields: [bmId], references: [id])
+  salesmen          User[]              @relation("BmSalesmen")
+  visits            Visit[]             @relation("VisitorVisits")
+  targetsSet        VisitTarget[]       @relation("TargetSetBy")
+  targets           VisitTarget[]       @relation("SalesmanTarget")
+  assignments       DealerAssignment[]
+  notifications     Notification[]
+  bmVisits          Visit[]             @relation("BmVisits")
+
+  @@map("users")
+}
+
+model Dealer {
+  id          String         @id @default(uuid())
+  name        String         @db.VarChar(150)
+  shopName    String?        @map("shop_name") @db.VarChar(200)
+  phone       String?        @db.VarChar(20)
+  address     String?        @db.Text
+  city        String?        @db.VarChar(100)
+  region      String?        @db.VarChar(100)
+  dealerCode  String?        @unique @map("dealer_code") @db.VarChar(50)
+  category    DealerCategory @default(GENERAL)
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @default(now()) @map("updated_at")
+
+  visits       Visit[]
+  assignments  DealerAssignment[]
+
+  @@map("dealers")
+}
+
+model Visit {
+  id           String      @id @default(uuid())
+  visitorId    String      @map("visitor_id") @db.Uuid
+  visitorRole  VisitorRole @map("visitor_role")
+  dealerId     String      @map("dealer_id") @db.Uuid
+  visitDate    DateTime    @map("visit_date") @db.Date
+  visitTime    DateTime?   @map("visit_time") @db.Time(6)
+  checkInLat   Decimal?    @map("check_in_lat") @db.Decimal(10, 8)
+  checkInLng   Decimal?    @map("check_in_lng") @db.Decimal(11, 8)
+  photoUrl     String?     @map("photo_url") @db.VarChar(500)
+  remarks      String?     @db.Text
+  purpose      Purpose     @default(OTHER)
+  status       VisitStatus @default(COMPLETED)
+  outcome      String?     @db.Text
+  nextAction   String?     @map("next_action") @db.Text
+  month        Int?
+  year         Int?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @default(now()) @map("updated_at")
+
+  visitor  User   @relation("VisitorVisits", fields: [visitorId], references: [id])
+  dealer   Dealer @relation(fields: [dealerId], references: [id])
+  bm       User?  @relation("BmVisits", fields: [visitorId], references: [id])
+
+  @@index([visitorId])
+  @@index([dealerId])
+  @@index([visitDate])
+  @@index([month, year])
+  @@map("visits")
+}
+
+model VisitTarget {
+  id           String   @id @default(uuid())
+  salesmanId   String   @map("salesman_id") @db.Uuid
+  setByBmId    String   @map("set_by_bm_id") @db.Uuid
+  targetMonth  Int      @map("target_month")
+  targetYear   Int      @map("target_year")
+  targetCount  Int      @default(0) @map("target_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  salesman  User @relation("SalesmanTarget", fields: [salesmanId], references: [id])
+  setBy     User @relation("TargetSetBy", fields: [setByBmId], references: [id])
+
+  @@unique([salesmanId, targetMonth, targetYear])
+  @@map("visit_targets")
+}
+
+model DealerAssignment {
+  id         String   @id @default(uuid())
+  dealerId   String   @map("dealer_id") @db.Uuid
+  salesmanId String   @map("salesman_id") @db.Uuid
+  assignedBy String?  @map("assigned_by") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  isPrimary  Boolean  @default(true) @map("is_primary")
+
+  dealer   Dealer @relation(fields: [dealerId], references: [id])
+  salesman User   @relation(fields: [salesmanId], references: [id])
+
+  @@unique([dealerId, salesmanId])
+  @@map("dealer_assignments")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id") @db.Uuid
+  title     String           @db.VarChar(200)
+  message   String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+enum UserRole {
+  ADMIN
+  BM
+  SALESMAN
+}
+
+enum DealerCategory {
+  PLATINUM
+  GOLD
+  SILVER
+  GENERAL
+}
+
+enum VisitorRole {
+  SALESMAN
+  BM
+}
+
+enum Purpose {
+  FOLLOW_UP
+  NEW_BUSINESS
+  COMPLAINT
+  DEMO
+  PAYMENT_COLLECTION
+  RELATIONSHIP_VISIT
+  OTHER
+}
+
+enum VisitStatus {
+  COMPLETED
+  PLANNED
+  CANCELLED
+}
+
+enum NotificationType {
+  TARGET_SET
+  TARGET_ACHIEVED
+  VISIT_REMINDER
+  SYSTEM
+}
