@@ -14,13 +14,14 @@ export default defineConfig({
       },
     },
   },
+  root: './client',
   build: {
-    outDir: './dist',
+    outDir: '../dist',
     emptyOutDir: true,
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./client/src"),
     },
   },
 });
